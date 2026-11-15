@@ -1,211 +1,72 @@
-Welcome to your new TanStack Start app!
+# Deadline Radar
 
-# Getting Started
+Watch any page. Never miss a deadline.
 
-To run this application:
+Deadline Radar is a realtime, collaborative page monitor built for the
+**TanStack Start Hackathon**. Add any URL to a shared board - a contest page,
+a launch page, a docs changelog - and Deadline Radar re-checks it every 10
+minutes. When the page changes, every open board updates in the same second.
+Deadlines tick down live, and presence shows who is watching with you.
+
+**Live app:** https://deadline-radar.netlify.app
+**Demo board:** https://deadline-radar.netlify.app/boards/ai-hackathons
+
+## What it does
+
+- **Realtime change detection** - pages are scraped with Firecrawl and hashed
+  inside a Convex action. A changed hash writes a new snapshot and a live
+  event; clients see it instantly over Convex's reactive queries.
+- **Live countdowns** - every tracker can carry a deadline. Countdowns tick
+  to the second on every connected client and flip to PASSED together.
+- **Collaborative boards** - boards are shared by link. Presence heartbeats
+  (a Convex mutation every 10s) show who is watching right now, and a live
+  activity feed narrates every add, change and error.
+- **Add anything** - paste a URL, an optional label and an optional deadline.
+  The first scrape runs seconds later.
+
+## How it is built
+
+| Layer | Tech |
+| --- | --- |
+| Framework | TanStack Start (React, file-based routing, SSR, server functions) |
+| Backend | Convex (schema, queries, mutations, actions, scheduler, crons) |
+| Scraping | Firecrawl `/v2/scrape` (markdown, main content only) |
+| Hosting | Netlify (SSR via Netlify Functions, edge CDN) |
+| Monitoring | Sentry (`@sentry/tanstackstart-react`, server + client tracing) |
+| Repo reviews | CodeRabbit on this repository |
+| Billing (demo) | Autumn |
+
+### Architecture
+
+1. `trackers.add` (Convex mutation) inserts a tracker and schedules
+   `scrape.scrapeTracker` immediately.
+2. `scrape.scrapeTracker` (Convex action) calls Firecrawl, normalizes the
+   markdown, SHA-256 hashes it, and compares against the stored hash.
+3. On change it writes a `snapshots` row and an `events` row; the board's
+   `useQuery` subscriptions push both to every open client in realtime.
+4. A Convex cron (`crons.interval`, 10 minutes) fans out re-checks for every
+   tracker due.
+5. Presence is a heartbeat mutation + a query over rows seen in the last 30
+   seconds; stale rows are reaped on every heartbeat.
+
+## Run it locally
 
 ```bash
 npm install
+# .env.local needs:
+#   VITE_CONVEX_URL=<your convex deployment url>
+npx convex deploy --url <your convex deployment url> --admin-key <key> --yes
+npx convex env set FIRECRAWL_API_KEY <your firecrawl key> --url <url> --admin-key <key>
 npm run dev
 ```
 
-# Building For Production
+Deploy to Netlify with `netlify deploy --build --prod` (build command
+`vite build`, publish `dist/client`).
 
-To build this application for production:
+## Hackathon notes
 
-```bash
-npm run build
-```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-
-## Setting up Convex
-
-- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `npx -y convex init` to set them automatically.)
-- Run `npx -y convex dev` to start the Convex server.
-
-
-## Deploy to Netlify
-
-This project ships with `netlify.toml` configured for a Netlify site:
-
-1. Push this repo to GitHub
-2. Visit https://app.netlify.com/start and import the repo
-3. Netlify auto-detects the build (`vite build` → `dist/client`)
-4. Open **Site settings → Environment variables** and add anything from `.env.example` that needs a real value in production
-5. Trigger the first deploy
-
-Server functions and API routes run on Netlify Functions. For lower-latency request handling, see Netlify Edge Functions: https://docs.netlify.com/edge-functions/overview.
-
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- New app, started November 15, 2026 (after the October 29 start date).
+- Uses TanStack Start + Convex plus cohost/partner integrations: Firecrawl
+  (core scraping), Netlify (hosting), Sentry (tracing), CodeRabbit (repo
+  reviews), Autumn (billing demo), Cloudflare.
+- Video demo: linked in the submission.
