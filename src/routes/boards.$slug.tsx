@@ -85,7 +85,7 @@ function BoardPage() {
           </div>
         </div>
         <div className="space-y-4">
-          <AddTrackerForm boardId={board._id} />
+          <AddTrackerForm boardId={board._id} trackerCount={trackers?.length ?? 0} />
           <EventFeed events={events ?? []} />
         </div>
       </div>

@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as autumn from "../autumn.js";
 import type * as boards from "../boards.js";
 import type * as crons from "../crons.js";
 import type * as events from "../events.js";
 import type * as presence from "../presence.js";
 import type * as scrape from "../scrape.js";
 import type * as trackers from "../trackers.js";
+import type * as turnstile from "../turnstile.js";
 
 import type {
   ApiFromModules,
@@ -22,12 +24,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  autumn: typeof autumn;
   boards: typeof boards;
   crons: typeof crons;
   events: typeof events;
   presence: typeof presence;
   scrape: typeof scrape;
   trackers: typeof trackers;
+  turnstile: typeof turnstile;
 }>;
 
 /**
