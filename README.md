@@ -32,9 +32,9 @@ Deadlines tick down live, and presence shows who is watching with you.
 | Backend | Convex (schema, queries, mutations, actions, scheduler, crons) |
 | Scraping | Firecrawl `/v2/scrape` (markdown, main content only) |
 | Hosting | Netlify (SSR via Netlify Functions, edge CDN) |
-| Monitoring | Sentry (`@sentry/tanstackstart-react`, server + client tracing) |
-| Repo reviews | CodeRabbit on this repository |
-| Billing (demo) | Autumn |
+| Monitoring | Sentry (`@sentry/tanstackstart-react`, server + client tracing, verified live) |
+| Bot protection | Cloudflare Turnstile (widget on the add form, token verified server-side via siteverify before any write) |
+| Billing (demo) | Autumn (free plan limited to 3 trackers/board; Pro upgrade via Autumn feature checks + hosted Stripe checkout) |
 
 ### Architecture
 
@@ -67,6 +67,10 @@ Deploy to Netlify with `netlify deploy --build --prod` (build command
 
 - New app, started November 15, 2026 (after the October 29 start date).
 - Uses TanStack Start + Convex plus cohost/partner integrations: Firecrawl
-  (core scraping), Netlify (hosting), Sentry (tracing), CodeRabbit (repo
-  reviews), Autumn (billing demo), Cloudflare.
+  (core scraping), Netlify (hosting), Sentry (error monitoring, verified
+  end-to-end), Autumn (Pro plan feature gating + checkout, verified against a
+  live Stripe sandbox session), Cloudflare Turnstile (bot protection, verified
+  server-side).
+- Free plan allows 3 trackers per board; hitting the limit surfaces the
+  Autumn-powered Pro upgrade card ($9/month, test-mode checkout).
 - Video demo: linked in the submission.
