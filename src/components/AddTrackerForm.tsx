@@ -57,23 +57,30 @@ export function AddTrackerForm({
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   // Cloudflare Turnstile widget (only when a site key is configured).
+  // The container can be replaced by React after hydration/query updates, so
+  // poll: whenever the live container is empty, (re)render the widget into it.
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY || !turnstileRef.current || widgetId.current) return
-    const render = () => {
-      if (window.turnstile && turnstileRef.current && !widgetId.current) {
-        widgetId.current = window.turnstile.render(turnstileRef.current, {
+    if (!TURNSTILE_SITE_KEY) return
+    const ensure = () => {
+      const el = turnstileRef.current
+      if (window.turnstile && el && el.childElementCount === 0) {
+        widgetId.current = window.turnstile.render(el, {
           sitekey: TURNSTILE_SITE_KEY,
           theme: 'dark',
           callback: (t) => setTurnstileToken(t),
         })
       }
     }
-    if (window.turnstile) return render()
-    const s = document.createElement('script')
-    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-    s.async = true
-    s.onload = render
-    document.head.appendChild(s)
+    if (!window.turnstile && !document.querySelector('script[data-turnstile]')) {
+      const s = document.createElement('script')
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+      s.async = true
+      s.dataset.turnstile = '1'
+      document.head.appendChild(s)
+    }
+    const t = setInterval(ensure, 500)
+    ensure()
+    return () => clearInterval(t)
   }, [])
 
   async function submit(e: React.FormEvent) {
